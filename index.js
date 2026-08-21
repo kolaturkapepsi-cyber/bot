@@ -77,6 +77,11 @@ client.on('messageCreate', async (message) => {
     console.error('messageCreate antiRaid hata:', err.message);
   }
 
+  // Sa → Aleyküm Selam
+  if (message.content.toLowerCase() === 'sa') {
+    return message.reply('Aleyküm selam kardeşim! 👋');
+  }
+
   // Prefix kontrolü
   if (!message.content.startsWith(config.prefix)) return;
 
