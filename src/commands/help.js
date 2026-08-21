@@ -13,6 +13,17 @@ module.exports = {
       .setThumbnail(message.client.user.displayAvatarURL())
       .addFields(
         {
+          name: '🔨 Moderasyon Komutları',
+          value: [
+            '`!ban @kullanıcı [sebep]` — Kullanıcıyı banla (`!yasakla`)',
+            '`!unban <ID> [sebep]` — Banı kaldır',
+            '`!kick @kullanıcı [sebep]` — Kullanıcıyı at (`!at`)',
+            '`!mute @kullanıcı <süre> [sebep]` — Timeout uygula (`!sustur`)\n↳ Süre: `10s` `5m` `1h` `1d`',
+            '`!unmute @kullanıcı` — Timeout\'u kaldır (`!unsustur`)',
+          ].join('\n'),
+          inline: false
+        },
+        {
           name: '🛡️ AntiRaid Komutları',
           value: [
             '`!antiraid status` — Sistem durumunu göster',

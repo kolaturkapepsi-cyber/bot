@@ -1,10 +1,9 @@
 const { DisTube } = require('distube');
-const { YouTubePlugin } = require('@distube/youtube');
+const { YtDlpPlugin } = require('@distube/yt-dlp');
 const ffmpegPath = require('ffmpeg-static');
 const path = require('path');
 
 // ffmpeg-static binary'sini sistem PATH'ine ekle
-// DisTube ffmpeg'i PATH üzerinden bulur
 const ffmpegDir = path.dirname(ffmpegPath);
 if (!process.env.PATH.includes(ffmpegDir)) {
   process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
@@ -16,7 +15,8 @@ let _distube = null;
  * DisTube örneğini başlatır. index.js'ten client hazır olunca çağrılır.
  */
 function initDistube(client) {
-  const plugins = [new YouTubePlugin()];
+  // yt-dlp: YouTube bot korumasını aşar, en güvenilir seçenek
+  const plugins = [new YtDlpPlugin({ update: true })];
 
   _distube = new DisTube(client, {
     plugins,
