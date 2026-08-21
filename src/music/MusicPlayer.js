@@ -18,6 +18,11 @@ if (process.env.PATH && !process.env.PATH.includes(ffmpegDir)) {
   process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
 }
 
+// play-dl'i YouTube için hazırla (anonim mod)
+playdl.setToken({
+  useragent: ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'],
+}).catch(() => {});
+
 // guildId → { connection, player, queue, current, textChannel, loopMode, volume }
 const queues = new Map();
 
@@ -53,8 +58,15 @@ async function connectToChannel(voiceChannel) {
 }
 
 async function resolveTrack(query) {
-  // URL mi?
-  if (/^https?:\/\//.test(query)) {
+  let url = query;
+
+  // Arama mı yoksa URL mi?
+  const isUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/.test(query);
+
+  if (isUrl) {
+    // play-dl'in doğrulamasını kullan
+    const valid = playdl.yt_validate(query);
+    if (valid !== 'video') throw new Error(`Invalid YouTube URL: ${query}`);
     const info = await playdl.video_info(query);
     const d = info.video_details;
     return {
@@ -65,6 +77,7 @@ async function resolveTrack(query) {
       requestedBy: null,
     };
   }
+
   // Arama
   const results = await playdl.search(query, { source: { youtube: 'video' }, limit: 1 });
   if (!results?.length) throw new Error('Şarkı bulunamadı.');
@@ -93,13 +106,13 @@ async function playNext(guildId) {
   data.current = song;
 
   try {
-    const stream = await playdl.stream(song.url, {
+    // Her zaman önce video bilgisini al, sonra stream aç
+    const streamInfo = await playdl.stream(song.url, {
       quality: 2,
-      precache: 3,
     });
 
-    const resource = createAudioResource(stream.stream, {
-      inputType: stream.type,
+    const resource = createAudioResource(streamInfo.stream, {
+      inputType: streamInfo.type,
       inlineVolume: true,
     });
     resource.volume?.setVolume(data.volume);

@@ -25,7 +25,8 @@ module.exports = {
 
       if (!isFirst) {
         const data = music.getQueue(message.guild.id);
-        await loading.edit(`✅ **${song.title}** kuyruğa eklendi. (Sıra: #${data.queue.length})`);
+        const pos = data ? data.queue.length : 1;
+        await loading.edit(`✅ **${song.title}** kuyruğa eklendi. (Sıra: #${pos})`);
       } else {
         await loading.delete().catch(() => {});
       }
