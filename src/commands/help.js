@@ -1,0 +1,54 @@
+const { EmbedBuilder } = require('discord.js');
+const config = require('../../config');
+
+module.exports = {
+  name: 'help',
+  description: 'Tüm komutları listele',
+  usage: '!help',
+
+  async execute(message) {
+    const embed = new EmbedBuilder()
+      .setColor(config.embedColor)
+      .setTitle('🛡️ AntiRaid Bot - Komut Listesi')
+      .setThumbnail(message.client.user.displayAvatarURL())
+      .addFields(
+        {
+          name: '🛡️ AntiRaid Komutları',
+          value: [
+            '`!antiraid status` — Sistem durumunu göster',
+            '`!antiraid on/off` — Sistemi aç/kapat',
+            '`!antiraid set <seçenek> <değer>` — Eşik ayarla',
+            '`!antiraid action <ban|kick|mute>` — Ceza türü ayarla',
+            '`!antiraid whitelist add/remove @kullanıcı` — Whitelist yönet',
+            '`!antiraid logchannel #kanal` — Log kanalı ayarla',
+          ].join('\n'),
+          inline: false
+        },
+        {
+          name: '🔒 Lockdown Komutları',
+          value: [
+            '`!lockdown` — Lockdown durumunu göster',
+            '`!lockdown on` — Sunucuyu kilitle',
+            '`!lockdown off` — Kilidi kaldır',
+          ].join('\n'),
+          inline: false
+        },
+        {
+          name: '📋 Log Komutları',
+          value: [
+            '`!logs [sayı]` — Son logları görüntüle (max 25)',
+          ].join('\n'),
+          inline: false
+        },
+        {
+          name: '🌐 Dashboard',
+          value: '`http://localhost:3000` — Web arayüzünden yönet',
+          inline: false
+        },
+      )
+      .setTimestamp()
+      .setFooter({ text: `Prefix: ${config.prefix} • AntiRaid Bot` });
+
+    message.reply({ embeds: [embed] });
+  }
+};

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%- title || 'AntiRaid Dashboard' %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>AntiRaid</span>
+    </div>
+    <div class="navbar-links">
+      <% if (user) { %>
+        <a href="/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <div class="user-info">
+          <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=32" onerror="this.src='/img/default-avatar.png'" alt="avatar" />
+          <span><%= user.username %></span>
+        </div>
+        <a href="/logout" class="btn btn-outline"><i class="fa-solid fa-right-from-bracket"></i> Çıkış</a>
+      <% } else { %>
+        <a href="/auth/discord" class="btn btn-discord"><i class="fa-brands fa-discord"></i> Discord ile Giriş</a>
+      <% } %>
+    </div>
+  </nav>
+  <main class="container">
+    <%- body %>
+  </main>
+  <footer>
+    <p>AntiRaid Bot &copy; 2024 — <a href="/auth/discord">Discord ile Giriş</a></p>
+  </footer>
+  <script src="/js/main.js"></script>
+</body>
+</html>

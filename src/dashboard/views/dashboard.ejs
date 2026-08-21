@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — AntiRaid</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container">
+    <div class="page-header">
+      <h1><i class="fa-solid fa-gauge"></i> Sunucularım</h1>
+      <p>Yönetmek istediğin sunucuyu seç.</p>
+    </div>
+
+    <div class="guild-grid">
+      <% if (guilds.length === 0) { %>
+        <div class="empty-state">
+          <i class="fa-solid fa-circle-info"></i>
+          <p>Yönetici olduğun sunucu bulunamadı.</p>
+        </div>
+      <% } %>
+      <% guilds.forEach(guild => { %>
+        <div class="guild-card <%= guild.botIn ? '' : 'guild-card--inactive' %>">
+          <div class="guild-icon">
+            <% if (guild.icon) { %>
+              <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png?size=64" alt="<%= guild.name %>" />
+            <% } else { %>
+              <div class="guild-icon-placeholder"><%= guild.name.charAt(0) %></div>
+            <% } %>
+          </div>
+          <div class="guild-info">
+            <h3><%= guild.name %></h3>
+            <span class="badge <%= guild.botIn ? 'badge--green' : 'badge--gray' %>">
+              <i class="fa-solid fa-<%= guild.botIn ? 'check' : 'xmark' %>"></i>
+              <%= guild.botIn ? 'Bot Aktif' : 'Bot Yok' %>
+            </span>
+          </div>
+          <% if (guild.botIn) { %>
+            <a href="/dashboard/<%= guild.id %>" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-gear"></i> Yönet
+            </a>
+          <% } else { %>
+            <a href="https://discord.com/oauth2/authorize?client_id=<%= process.env.CLIENT_ID %>&permissions=8&scope=bot&guild_id=<%= guild.id %>"
+               target="_blank" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-plus"></i> Ekle
+            </a>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

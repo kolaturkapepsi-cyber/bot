@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hata — AntiRaid Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body class="center-page">
+  <div class="error-card">
+    <div class="error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h2>Bir Hata Oluştu</h2>
+    <p><%= message || 'Bilinmeyen bir hata oluştu.' %></p>
+    <a href="/dashboard" class="btn btn-primary"><i class="fa-solid fa-arrow-left"></i> Dashboard'a Dön</a>
+  </div>
+  <script src="/js/main.js"></script>
+</body>
+</html>

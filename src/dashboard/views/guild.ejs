@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= guildName %> — AntiRaid Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container">
+
+    <!-- Başlık -->
+    <div class="page-header guild-header">
+      <div class="guild-title">
+        <% if (guildIcon) { %>
+          <img src="<%= guildIcon %>" class="guild-header-icon" alt="<%= guildName %>" />
+        <% } %>
+        <div>
+          <h1><%= guildName %></h1>
+          <a href="/dashboard" class="back-link"><i class="fa-solid fa-arrow-left"></i> Sunucu Listesi</a>
+        </div>
+      </div>
+
+      <!-- Lockdown Toggle -->
+      <div class="lockdown-toggle">
+        <span class="lockdown-label">
+          <i class="fa-solid fa-lock<%= guildData.antiRaid.lockdown ? '' : '-open' %>"></i>
+          Lockdown: <strong id="lockdown-status"><%= guildData.antiRaid.lockdown ? 'AKTİF' : 'PASİF' %></strong>
+        </span>
+        <button id="lockdown-btn"
+          class="btn <%= guildData.antiRaid.lockdown ? 'btn-danger' : 'btn-success' %>"
+          data-guild="<%= guildData.guildId %>"
+          data-state="<%= guildData.antiRaid.lockdown %>">
+          <%= guildData.antiRaid.lockdown ? '🔓 Kilidi Aç' : '🔒 Kilitle' %>
+        </button>
+      </div>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card--red">
+        <div class="stat-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="stat-info">
+          <span class="stat-value"><%= guildData.stats.totalRaidsBlocked %></span>
+          <span class="stat-label">Engellenen Raid</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--orange">
+        <div class="stat-icon"><i class="fa-solid fa-comment-slash"></i></div>
+        <div class="stat-info">
+          <span class="stat-value"><%= guildData.stats.totalSpamBlocked %></span>
+          <span class="stat-label">Engellenen Spam</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--blue">
+        <div class="stat-icon"><i class="fa-solid fa-gavel"></i></div>
+        <div class="stat-info">
+          <span class="stat-value"><%= guildData.stats.totalBans %></span>
+          <span class="stat-label">Toplam Ban</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <div class="stat-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+        <div class="stat-info">
+          <span class="stat-value"><%= guildData.stats.totalKicks %></span>
+          <span class="stat-label">Toplam Kick</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grafik -->
+    <div class="card" style="margin-bottom:2rem;">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-chart-bar"></i> Son 7 Günlük Aktivite</h2>
+      </div>
+      <div class="card-body">
+        <canvas id="activityChart" height="80"></canvas>
+      </div>
+    </div>
+
+    <div class="settings-layout">
+
+      <!-- Sol: Ayarlar Formu -->
+      <div class="settings-form-wrap">
+        <div class="card">
+          <div class="card-header">
+            <h2><i class="fa-solid fa-sliders"></i> AntiRaid Ayarları</h2>
+          </div>
+          <div class="card-body">
+            <form id="settings-form" data-guild="<%= guildData.guildId %>">
+
+              <!-- Genel -->
+              <div class="form-section">
+                <h3>Genel</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>AntiRaid Sistemi</label>
+                    <label class="toggle">
+                      <input type="checkbox" name="enabled" <%= guildData.antiRaid.enabled ? 'checked' : '' %> />
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>Ceza Türü</label>
+                    <select name="action" class="form-select">
+                      <option value="ban" <%= guildData.antiRaid.action === 'ban' ? 'selected' : '' %>>Ban</option>
+                      <option value="kick" <%= guildData.antiRaid.action === 'kick' ? 'selected' : '' %>>Kick</option>
+                      <option value="mute" <%= guildData.antiRaid.action === 'mute' ? 'selected' : '' %>>Mute</option>
+                      <option value="lockdown" <%= guildData.antiRaid.action === 'lockdown' ? 'selected' : '' %>>Lockdown</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Log Kanalı</label>
+                    <select name="logChannel" class="form-select">
+                      <option value="">Seçilmedi</option>
+                      <% channels.forEach(ch => { %>
+                        <option value="<%= ch.id %>" <%= guildData.antiRaid.logChannel === ch.id ? 'selected' : '' %>>#<%= ch.name %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Yeni Hesap Yaşı (gün)</label>
+                    <input type="number" name="newAccountAge" class="form-input" value="<%= guildData.antiRaid.newAccountAge %>" min="1" max="365" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Join Flood -->
+              <div class="form-section">
+                <h3><i class="fa-solid fa-user-plus"></i> Join Flood Koruması</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Kullanıcı Eşiği</label>
+                    <input type="number" name="joinThreshold" class="form-input" value="<%= guildData.antiRaid.joinThreshold %>" min="2" max="100" />
+                  </div>
+                  <div class="form-group">
+                    <label>Zaman Aralığı (saniye)</label>
+                    <input type="number" name="joinInterval" class="form-input" value="<%= guildData.antiRaid.joinInterval / 1000 %>" min="1" max="60" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Spam -->
+              <div class="form-section">
+                <h3><i class="fa-solid fa-comment-slash"></i> Mesaj Spam Koruması</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Mesaj Eşiği</label>
+                    <input type="number" name="spamThreshold" class="form-input" value="<%= guildData.antiRaid.spamThreshold %>" min="2" max="50" />
+                  </div>
+                  <div class="form-group">
+                    <label>Zaman Aralığı (saniye)</label>
+                    <input type="number" name="spamInterval" class="form-input" value="<%= guildData.antiRaid.spamInterval / 1000 %>" min="1" max="60" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mention Spam -->
+              <div class="form-section">
+                <h3><i class="fa-solid fa-at"></i> Mention Spam Koruması</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Mention Eşiği</label>
+                    <input type="number" name="mentionThreshold" class="form-input" value="<%= guildData.antiRaid.mentionThreshold %>" min="2" max="50" />
+                  </div>
+                  <div class="form-group">
+                    <label>Zaman Aralığı (saniye)</label>
+                    <input type="number" name="mentionInterval" class="form-input" value="<%= guildData.antiRaid.mentionInterval / 1000 %>" min="1" max="60" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Kanal Spam -->
+              <div class="form-section">
+                <h3><i class="fa-solid fa-hashtag"></i> Kanal Spam Koruması</h3>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>İşlem Eşiği</label>
+                    <input type="number" name="channelThreshold" class="form-input" value="<%= guildData.antiRaid.channelThreshold %>" min="2" max="20" />
+                  </div>
+                  <div class="form-group">
+                    <label>Zaman Aralığı (saniye)</label>
+                    <input type="number" name="channelInterval" class="form-input" value="<%= guildData.antiRaid.channelInterval / 1000 %>" min="1" max="60" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fa-solid fa-floppy-disk"></i> Kaydet
+                </button>
+                <span id="save-status" class="save-status"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sağ: Log Tablosu -->
+      <div class="logs-wrap">
+        <div class="card">
+          <div class="card-header logs-header">
+            <h2><i class="fa-solid fa-list"></i> Son Loglar</h2>
+            <button id="clear-logs-btn" class="btn btn-danger btn-sm" data-guild="<%= guildData.guildId %>">
+              <i class="fa-solid fa-trash"></i> Temizle
+            </button>
+          </div>
+          <div class="card-body logs-body">
+            <% if (logs.length === 0) { %>
+              <div class="empty-state">
+                <i class="fa-solid fa-check-circle"></i>
+                <p>Henüz log kaydı yok.</p>
+              </div>
+            <% } else { %>
+              <div class="log-list" id="log-list">
+                <% logs.forEach(log => { %>
+                  <div class="log-item log-item--<%= log.type %>">
+                    <div class="log-type">
+                      <% const typeEmoji = { raid_detected: '🚨', spam: '🗑️', mention_spam: '📢', channel_spam: '📁', new_account: '👶' }; %>
+                      <%= typeEmoji[log.type] || '⚠️' %>
+                    </div>
+                    <div class="log-details">
+                      <strong><%= log.username %></strong>
+                      <span class="badge badge--red"><%= log.action?.toUpperCase() %></span>
+                      <p class="log-reason"><%= log.reason %></p>
+                    </div>
+                    <div class="log-time">
+                      <%= new Date(log.timestamp).toLocaleString('tr-TR') %>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-layout -->
+  </div><!-- /container -->
+
+  <%- include('partials/footer') %>
+
+  <script>
+    // Chart.js verisi
+    window.GUILD_ID = '<%= guildData.guildId %>';
+  </script>
+  <script src="/js/main.js"></script>
+  <script src="/js/guild.js"></script>
+</body>
+</html>

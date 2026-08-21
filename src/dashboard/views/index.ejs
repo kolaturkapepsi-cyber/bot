@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AntiRaid Bot — Ana Sayfa</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Raid Koruması</div>
+      <h1>Sunucunu Raidlerden <span class="gradient-text">Koru</span></h1>
+      <p>Gelişmiş anti-raid sistemi, spam koruması ve gerçek zamanlı dashboard ile Discord sunucunuzu güvende tutun.</p>
+      <div class="hero-buttons">
+        <% if (user) { %>
+          <a href="/dashboard" class="btn btn-primary"><i class="fa-solid fa-gauge"></i> Dashboard'a Git</a>
+        <% } else { %>
+          <a href="/auth/discord" class="btn btn-discord"><i class="fa-brands fa-discord"></i> Discord ile Başla</a>
+        <% } %>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="shield-icon"><i class="fa-solid fa-shield-halved"></i></div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-user-xmark"></i></div>
+      <h3>Join Raid Koruması</h3>
+      <p>Kısa sürede çok sayıda kullanıcı katılımını algılar ve otomatik önlem alır.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-comment-slash"></i></div>
+      <h3>Spam & Mention Koruması</h3>
+      <p>Mesaj spamını ve toplu mention saldırılarını gerçek zamanlı engeller.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
+      <h3>Otomatik Lockdown</h3>
+      <p>Raid tespit edildiğinde sunucuyu anında kilitler, saldırıyı durdurur.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+      <h3>Gerçek Zamanlı Dashboard</h3>
+      <p>Web arayüzünden tüm ayarları yönet, istatistikleri ve logları takip et.</p>
+    </div>
+  </section>
+
+  <%- include('partials/footer') %>
+  <script src="/js/main.js"></script>
+</body>
+</html>

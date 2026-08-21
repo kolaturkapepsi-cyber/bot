@@ -1,0 +1,22 @@
+<nav class="navbar">
+  <div class="navbar-brand">
+    <a href="/">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>AntiRaid</span>
+    </a>
+  </div>
+  <div class="navbar-links">
+    <% if (typeof user !== 'undefined' && user) { %>
+      <a href="/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+      <div class="user-info">
+        <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=32"
+             onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
+             alt="avatar" />
+        <span><%= user.username %></span>
+      </div>
+      <a href="/logout" class="btn btn-outline btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Çıkış</a>
+    <% } else { %>
+      <a href="/auth/discord" class="btn btn-discord"><i class="fa-brands fa-discord"></i> Giriş Yap</a>
+    <% } %>
+  </div>
+</nav>
