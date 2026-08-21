@@ -1,31 +1,30 @@
-const { getDistube } = require('../music/MusicPlayer');
+const { useQueue } = require('discord-player');
+const { QueueRepeatMode } = require('discord-player');
 
 module.exports = {
   name: 'loop',
   aliases: ['döngü', 'tekrar'],
-  description: 'Döngü modunu ayarlar: none (kapalı), song (şarkı), queue (kuyruk).',
+  description: 'Döngü modunu ayarlar: none, song, queue.',
   usage: '!loop <none|song|queue>',
 
   async execute(message, args) {
-    const distube = getDistube();
-    const queue = distube.getQueue(message.guild.id);
-
+    const queue = useQueue(message.guild.id);
     if (!queue) return message.reply('❌ Şu an çalan bir şarkı yok.');
     if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
 
-    const modeMap = { none: 0, song: 1, queue: 2 };
+    const modeMap = {
+      none: QueueRepeatMode.OFF,
+      song: QueueRepeatMode.TRACK,
+      queue: QueueRepeatMode.QUEUE,
+    };
+
     const mode = args[0]?.toLowerCase();
-
     if (!mode || !(mode in modeMap)) {
-      return message.reply('❌ Geçerli mod: `none`, `song`, `queue`\nÖrnek: `!loop song`');
+      return message.reply('❌ Geçerli mod: `none`, `song`, `queue`');
     }
 
-    try {
-      distube.setRepeatMode(message.guild.id, modeMap[mode]);
-      const labels = { none: '➡️ Döngü kapatıldı', song: '🔂 Şarkı döngüsü açıldı', queue: '🔁 Kuyruk döngüsü açıldı' };
-      message.reply(labels[mode]);
-    } catch (err) {
-      message.reply(`❌ ${err.message}`);
-    }
+    queue.setRepeatMode(modeMap[mode]);
+    const labels = { none: '➡️ Döngü kapatıldı', song: '🔂 Şarkı döngüsü', queue: '🔁 Kuyruk döngüsü' };
+    message.reply(labels[mode]);
   },
 };

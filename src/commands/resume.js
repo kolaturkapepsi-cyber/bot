@@ -1,4 +1,4 @@
-const { getDistube } = require('../music/MusicPlayer');
+const { useQueue } = require('discord-player');
 
 module.exports = {
   name: 'resume',
@@ -7,19 +7,12 @@ module.exports = {
   usage: '!resume',
 
   async execute(message) {
-    const distube = getDistube();
-    const queue = distube.getQueue(message.guild.id);
-
+    const queue = useQueue(message.guild.id);
     if (!queue) return message.reply('❌ Şu an çalan bir şarkı yok.');
     if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
+    if (!queue.node.isPaused()) return message.reply('❌ Şarkı zaten çalıyor.');
 
-    if (!queue.paused) return message.reply('❌ Şarkı zaten çalıyor.');
-
-    try {
-      distube.resume(message.guild.id);
-      message.reply('▶️ Şarkı devam ediyor.');
-    } catch (err) {
-      message.reply(`❌ ${err.message}`);
-    }
+    queue.node.resume();
+    message.reply('▶️ Şarkı devam ediyor.');
   },
 };

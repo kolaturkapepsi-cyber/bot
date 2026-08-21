@@ -1,4 +1,4 @@
-const { getDistube } = require('../music/MusicPlayer');
+const { joinVoiceChannel, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
 
 module.exports = {
   name: 'join',
@@ -8,9 +8,7 @@ module.exports = {
 
   async execute(message) {
     const voiceChannel = message.member?.voice?.channel;
-    if (!voiceChannel) {
-      return message.reply('❌ Önce bir ses kanalına gir!');
-    }
+    if (!voiceChannel) return message.reply('❌ Önce bir ses kanalına gir!');
 
     const permissions = voiceChannel.permissionsFor(message.client.user);
     if (!permissions.has('Connect') || !permissions.has('Speak')) {
@@ -18,13 +16,16 @@ module.exports = {
     }
 
     try {
-      const distube = getDistube();
-      // DisTube üzerinden bağlan — çakışma olmaz
-      await distube.voices.join(voiceChannel);
+      const connection = joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator,
+        selfDeaf: true,
+      });
+      await entersState(connection, VoiceConnectionStatus.Ready, 10_000);
       message.reply(`✅ **${voiceChannel.name}** kanalına bağlandım!`);
     } catch (err) {
-      console.error('[join komutu]', err.message);
-      message.reply(`❌ Ses kanalına bağlanılamadı: \`${err.message}\``);
+      message.reply(`❌ Bağlanılamadı: \`${err.message}\``);
     }
   },
 };

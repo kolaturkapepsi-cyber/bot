@@ -6,7 +6,7 @@ const connectDB = require('./src/database/connect');
 const AntiRaid = require('./src/antiraid/AntiRaid');
 const Guild = require('./src/database/models/Guild');
 const config = require('./config');
-const { initDistube } = require('./src/music/MusicPlayer');
+const { initPlayer } = require('./src/music/MusicPlayer');
 
 // ─────────────────────────────────────────────
 // CLIENT KURULUMU
@@ -38,8 +38,8 @@ fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
 
 const antiRaid = new AntiRaid(client);
 
-// DisTube müzik sistemini başlat
-initDistube(client);
+// discord-player müzik sistemini başlat
+initPlayer(client).catch(err => console.error('MusicPlayer init hatası:', err.message));
 
 // Dashboard'u başlat
 const startDashboard = require('./src/dashboard/server');

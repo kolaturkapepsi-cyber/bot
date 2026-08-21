@@ -1,4 +1,5 @@
-const { getDistube } = require('../music/MusicPlayer');
+const { useQueue } = require('discord-player');
+const { getVoiceConnection } = require('@discordjs/voice');
 
 module.exports = {
   name: 'left',
@@ -7,31 +8,17 @@ module.exports = {
   usage: '!left',
 
   async execute(message) {
-    const voiceChannel = message.member?.voice?.channel;
-    if (!voiceChannel) {
-      return message.reply('❌ Bir ses kanalında olman gerekiyor!');
+    if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
+
+    const queue = useQueue(message.guild.id);
+    if (queue) {
+      queue.delete();
+    } else {
+      const connection = getVoiceConnection(message.guild.id);
+      if (!connection) return message.reply('❌ Bot zaten bir ses kanalında değil.');
+      connection.destroy();
     }
 
-    const distube = getDistube();
-    const queue = distube.getQueue(message.guild.id);
-    const voice = distube.voices.get(message.guild.id);
-
-    if (!queue && !voice) {
-      return message.reply('❌ Bot zaten bir ses kanalında değil.');
-    }
-
-    try {
-      if (queue) {
-        // Müzik çalıyorsa kuyruğu temizleyerek çık
-        await distube.stop(message.guild.id);
-      } else {
-        // Sadece bağlıysa direkt ayrıl
-        voice.leave();
-      }
-      message.reply(`👋 **${voiceChannel.name}** kanalından ayrıldım.`);
-    } catch (err) {
-      console.error('[left komutu]', err.message);
-      message.reply(`❌ Ayrılırken hata: \`${err.message}\``);
-    }
+    message.reply(`👋 Ses kanalından ayrıldım.`);
   },
 };

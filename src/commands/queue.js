@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getDistube } = require('../music/MusicPlayer');
+const { useQueue } = require('discord-player');
 
 module.exports = {
   name: 'queue',
@@ -8,49 +8,32 @@ module.exports = {
   usage: '!queue',
 
   async execute(message) {
-    const distube = getDistube();
-    const queue = distube.getQueue(message.guild.id);
+    const queue = useQueue(message.guild.id);
+    if (!queue?.currentTrack) return message.reply('❌ Kuyruk boş.');
 
-    if (!queue || queue.songs.length === 0) {
-      return message.reply('❌ Kuyruk boş. Şarkı eklemek için `!play <şarkı>` kullan.');
-    }
+    const tracks = queue.tracks.toArray();
+    const current = queue.currentTrack;
 
-    const formatDuration = (sec) => {
-      const m = Math.floor(sec / 60);
-      const s = String(sec % 60).padStart(2, '0');
-      return `${m}:${s}`;
-    };
-
-    const loopLabels = { 0: '➡️ Kapalı', 1: '🔂 Şarkı', 2: '🔁 Kuyruk' };
+    const repeatLabels = { 0: '➡️ Kapalı', 1: '🔂 Şarkı', 2: '🔁 Kuyruk', 3: '🔀 Karışık' };
 
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle(`🎵 ${message.guild.name} — Müzik Kuyruğu`)
-      .setFooter({
-        text: `Toplam ${queue.songs.length} şarkı • Loop: ${loopLabels[queue.repeatMode] || '➡️ Kapalı'}`,
-      });
+      .addFields({
+        name: '▶️ Şu An Çalıyor',
+        value: `**[${current.title}](${current.url})** \`${current.duration}\``,
+      })
+      .setFooter({ text: `Toplam ${tracks.length + 1} şarkı • Loop: ${repeatLabels[queue.repeatMode] || '➡️ Kapalı'}` });
 
-    // Şu an çalıyor
-    const current = queue.songs[0];
-    embed.addFields({
-      name: '▶️ Şu An Çalıyor',
-      value: `**[${current.name}](${current.url})** \`${formatDuration(current.duration)}\``,
-    });
-
-    // Sıradakiler
-    if (queue.songs.length > 1) {
-      const list = queue.songs
-        .slice(1, 11)
-        .map((song, i) => `\`${i + 1}.\` [${song.name}](${song.url}) \`${formatDuration(song.duration)}\``)
+    if (tracks.length > 0) {
+      const list = tracks.slice(0, 10)
+        .map((t, i) => `\`${i + 1}.\` [${t.title}](${t.url}) \`${t.duration}\``)
         .join('\n');
 
-      embed.addFields({
-        name: `📋 Sıradakiler (${queue.songs.length - 1} şarkı)`,
-        value: list,
-      });
+      embed.addFields({ name: `📋 Sıradakiler (${tracks.length})`, value: list });
 
-      if (queue.songs.length > 11) {
-        embed.addFields({ name: '\u200b', value: `... ve **${queue.songs.length - 11}** şarkı daha.` });
+      if (tracks.length > 10) {
+        embed.addFields({ name: '\u200b', value: `... ve **${tracks.length - 10}** şarkı daha.` });
       }
     }
 
