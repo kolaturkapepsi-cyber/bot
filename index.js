@@ -1,13 +1,17 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
-const connectDB = require('./src/database/connect');
 const AntiRaid = require('./src/antiraid/AntiRaid');
-const Guild = require('./src/database/models/Guild');
-const config = require('./config');
+const db       = require('./src/database/JsonDB');
+const config   = require('./config');
+
+// data/guilds klasörünü oluştur (JsonDB zaten yapıyor ama garanti olsun)
+const dataDir = path.join(__dirname, 'data', 'guilds');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
 // ─────────────────────────────────────────────
-// CLIENT KURULUMU
+// CLIENT
 // ─────────────────────────────────────────────
 const client = new Client({
   intents: [
@@ -16,63 +20,55 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.GuildVoiceStates, // Müzik için gerekli
+    GatewayIntentBits.GuildVoiceStates,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
 });
 
-// Komutları yükle
+// ─────────────────────────────────────────────
+// KOMUT YÜKLEYİCİ
+// ─────────────────────────────────────────────
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'src', 'commands');
 fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
   const cmd = require(path.join(commandsPath, file));
   client.commands.set(cmd.name, cmd);
-  // Alias varsa onları da kaydet
   if (cmd.aliases && Array.isArray(cmd.aliases)) {
     cmd.aliases.forEach(alias => client.commands.set(alias, cmd));
   }
-  console.log(`📦 Komut yüklendi: ${cmd.name}${cmd.aliases ? ` (aliases: ${cmd.aliases.join(', ')})` : ''}`);
+  console.log(`📦 Komut yüklendi: ${cmd.name}${cmd.aliases ? ` (${cmd.aliases.join(', ')})` : ''}`);
 });
 
 const antiRaid = new AntiRaid(client);
-
-// Dashboard'u başlat
 const startDashboard = require('./src/dashboard/server');
 
-
-
-
-client.once('ready', async () => {
+// ─────────────────────────────────────────────
+// READY
+// ─────────────────────────────────────────────
+client.once('ready', () => {
   console.log(`\n✅ ${client.user.tag} olarak giriş yapıldı!`);
   console.log(`📡 ${client.guilds.cache.size} sunucuda aktif\n`);
-
   client.user.setPresence({
     activities: [{ name: '🛡️ Raid Koruma Aktif | !help', type: 3 }],
     status: 'online',
   });
-
-  // Dashboard başlat
   startDashboard(client, antiRaid);
 });
 
 // ─────────────────────────────────────────────
-// YENİ ÜYE KATILDI — JOIN RAID KONTROLÜ
+// YENİ ÜYE
 // ─────────────────────────────────────────────
 client.on('guildMemberAdd', async (member) => {
-  try {
-    await antiRaid.checkJoinRaid(member);
-  } catch (err) {
-    console.error('guildMemberAdd hata:', err.message);
-  }
+  try { await antiRaid.checkJoinRaid(member); }
+  catch (err) { console.error('guildMemberAdd hata:', err.message); }
 });
 
 // ─────────────────────────────────────────────
-// MESAJ ALINDI — SPAM / MENTION SPAM KONTROLÜ
+// MESAJ
 // ─────────────────────────────────────────────
 client.on('messageCreate', async (message) => {
   if (!message.guild || message.author.bot) return;
 
-  // Spam kontrol
   try {
     await antiRaid.checkSpam(message);
     await antiRaid.checkMentionSpam(message);
@@ -80,17 +76,14 @@ client.on('messageCreate', async (message) => {
     console.error('messageCreate antiRaid hata:', err.message);
   }
 
-  // Sa → Aleyküm Selam
   if (message.content.toLowerCase() === 'sa') {
     return message.reply('Aleyküm selam kardeşim! 👋');
   }
 
-  // Prefix kontrolü
   if (!message.content.startsWith(config.prefix)) return;
 
   const args = message.content.slice(config.prefix.length).trim().split(/\s+/);
   const commandName = args.shift().toLowerCase();
-
   const command = client.commands.get(commandName);
   if (!command) return;
 
@@ -103,22 +96,22 @@ client.on('messageCreate', async (message) => {
 });
 
 // ─────────────────────────────────────────────
-// BAN KORUMASI — Korunan kullanıcı banlanırsa otomatik unban
+// BAN KORUMASI
 // ─────────────────────────────────────────────
 client.on('guildBanAdd', async (ban) => {
-  const protectedUsers = (process.env.PROTECTED_USERS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const protectedUsers = (process.env.PROTECTED_USERS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
   if (!protectedUsers.includes(ban.user.id)) return;
 
   try {
     await ban.guild.members.unban(ban.user.id, '🛡️ Koruma aktif — otomatik unban');
-    console.log(`🛡️ Korunan kullanıcı ${ban.user.tag} otomatik unban edildi.`);
+    console.log(`🛡️ ${ban.user.tag} otomatik unban edildi.`);
 
-    // Log kanalına bildir
-    const guildData = await require('./src/database/models/Guild').findOne({ guildId: ban.guild.id });
+    const guildData = db.findOne(ban.guild.id);
     const logChannelId = guildData?.antiRaid?.logChannel;
     if (logChannelId) {
-      const logChannel = ban.guild.channels.cache.get(logChannelId);
-      logChannel?.send(`🛡️ **${ban.user.tag}** koruma altında olduğu için ban kaldırıldı.`).catch(() => {});
+      ban.guild.channels.cache.get(logChannelId)
+        ?.send(`🛡️ **${ban.user.tag}** koruma altında, ban kaldırıldı.`).catch(() => {});
     }
   } catch (err) {
     console.error('Ban koruması hatası:', err.message);
@@ -126,15 +119,15 @@ client.on('guildBanAdd', async (ban) => {
 });
 
 // ─────────────────────────────────────────────
-// KANAL OLUŞTURULDU/SİLİNDİ — KANAL SPAM
+// KANAL SPAM
 // ─────────────────────────────────────────────
 client.on('channelCreate', async (channel) => {
   if (!channel.guild) return;
   try {
-    const logs = await channel.guild.fetchAuditLogs({ type: 10, limit: 1 }); // CHANNEL_CREATE
+    const logs = await channel.guild.fetchAuditLogs({ type: 10, limit: 1 });
     const entry = logs.entries.first();
     if (!entry) return;
-    const guildData = await antiRaid.getGuildData(channel.guild.id);
+    const guildData = antiRaid.getGuildData(channel.guild.id);
     if (!guildData.antiRaid.enabled) return;
     if (antiRaid.isWhitelisted({ id: entry.executor.id, permissions: null, roles: { cache: new Map() } }, guildData)) return;
     await antiRaid.checkChannelSpam(channel.guild, entry.executor.id, guildData);
@@ -146,10 +139,10 @@ client.on('channelCreate', async (channel) => {
 client.on('channelDelete', async (channel) => {
   if (!channel.guild) return;
   try {
-    const logs = await channel.guild.fetchAuditLogs({ type: 12, limit: 1 }); // CHANNEL_DELETE
+    const logs = await channel.guild.fetchAuditLogs({ type: 12, limit: 1 });
     const entry = logs.entries.first();
     if (!entry) return;
-    const guildData = await antiRaid.getGuildData(channel.guild.id);
+    const guildData = antiRaid.getGuildData(channel.guild.id);
     if (!guildData.antiRaid.enabled) return;
     await antiRaid.checkChannelSpam(channel.guild, entry.executor.id, guildData);
   } catch (err) {
@@ -158,38 +151,22 @@ client.on('channelDelete', async (channel) => {
 });
 
 // ─────────────────────────────────────────────
-// SUNUCUYA KATILINDI
+// YENİ SUNUCU
 // ─────────────────────────────────────────────
-client.on('guildCreate', async (guild) => {
+client.on('guildCreate', (guild) => {
   console.log(`➕ Yeni sunucu: ${guild.name} (${guild.id})`);
-  try {
-    await Guild.findOneAndUpdate(
-      { guildId: guild.id },
-      { guildId: guild.id, guildName: guild.name },
-      { upsert: true, new: true }
-    );
-  } catch (err) {
-    console.error('guildCreate DB hatası:', err.message);
-  }
+  db.findOneAndUpdate(guild.id, { guildName: guild.name });
 });
 
 // ─────────────────────────────────────────────
 // HATA YÖNETİMİ
 // ─────────────────────────────────────────────
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err.message);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err.message);
-});
+process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err.message));
+process.on('uncaughtException',  (err) => console.error('Uncaught Exception:',  err.message));
 
 // ─────────────────────────────────────────────
 // BAŞLAT
 // ─────────────────────────────────────────────
-(async () => {
-  await connectDB();
-  await client.login(process.env.BOT_TOKEN);
-})();
+client.login(process.env.BOT_TOKEN);
 
 module.exports = { client, antiRaid };

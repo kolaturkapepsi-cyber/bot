@@ -2,10 +2,9 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const { Strategy } = require('passport-discord');
-const MongoStore = require('connect-mongo');
 const path = require('path');
 const config = require('../../config');
-const Guild = require('../database/models/Guild');
+const db = require('../database/JsonDB');
 
 const app = express();
 
@@ -33,38 +32,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Session — dosya tabanlı (MongoDB yok)
 app.use(session({
   secret: config.dashboard.secret,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/antiraid-bot',
-    touchAfter: 24 * 3600,
-  }),
   cookie: { maxAge: 604800000 }, // 7 gün
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Auth middleware
+// ─────────────────────────────────────────────
+// AUTH MIDDLEWARE
+// ─────────────────────────────────────────────
 const isAuth = (req, res, next) => {
   if (req.isAuthenticated()) return next();
   res.redirect('/login');
 };
 
-// Admin kontrolü — sunucuda yönetici mi?
-const isGuildAdmin = async (req, res, next) => {
+const isGuildAdmin = (req, res, next) => {
   const { guildId } = req.params;
   const userGuild = req.user.guilds?.find(g => g.id === guildId);
   if (!userGuild) return res.status(403).render('error', { message: 'Bu sunucuya erişiminiz yok.', user: req.user });
   const hasAdmin = (BigInt(userGuild.permissions) & BigInt(0x8)) === BigInt(0x8);
-  if (!hasAdmin) return res.status(403).render('error', { message: 'Bu sunucuyu yönetmek için Administrator yetkisi gereklidir.', user: req.user });
+  if (!hasAdmin) return res.status(403).render('error', { message: 'Administrator yetkisi gerekli.', user: req.user });
   next();
 };
 
 // ─────────────────────────────────────────────
-// AUTH ROTASLARI
+// AUTH ROTALARI
 // ─────────────────────────────────────────────
 app.get('/login', (req, res) => {
   if (req.isAuthenticated()) return res.redirect('/dashboard');
@@ -93,21 +90,11 @@ app.get('/', (req, res) => {
 // DASHBOARD — SUNUCU LİSTESİ
 // ─────────────────────────────────────────────
 app.get('/dashboard', isAuth, async (req, res) => {
-  // Botun bulunduğu ve kullanıcının admin olduğu sunucular
   const client = req.app.get('discordClient');
   const userGuilds = req.user.guilds || [];
-
-  const manageable = userGuilds.filter(g => {
-    const hasAdmin = (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8);
-    return hasAdmin;
-  });
-
+  const manageable = userGuilds.filter(g => (BigInt(g.permissions) & BigInt(0x8)) === BigInt(0x8));
   const botGuildIds = client ? [...client.guilds.cache.keys()] : [];
-  const guilds = manageable.map(g => ({
-    ...g,
-    botIn: botGuildIds.includes(g.id),
-  }));
-
+  const guilds = manageable.map(g => ({ ...g, botIn: botGuildIds.includes(g.id) }));
   res.render('dashboard', { user: req.user, guilds });
 });
 
@@ -118,16 +105,12 @@ app.get('/dashboard/:guildId', isAuth, isGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   const client = req.app.get('discordClient');
 
-  let guildData = await Guild.findOne({ guildId });
-  if (!guildData) {
-    guildData = new Guild({ guildId });
-    await guildData.save();
-  }
-
+  const guildData = db.findOne(guildId);
   const discordGuild = client?.guilds.cache.get(guildId);
+
   const channels = discordGuild
     ? [...discordGuild.channels.cache.values()]
-        .filter(c => c.type === 0) // TEXT kanallar
+        .filter(c => c.type === 0)
         .map(c => ({ id: c.id, name: c.name }))
     : [];
 
@@ -163,25 +146,21 @@ app.post('/api/guild/:guildId/settings', isAuth, isGuildAdmin, async (req, res) 
   } = req.body;
 
   try {
-    await Guild.findOneAndUpdate(
-      { guildId },
-      {
-        'antiRaid.enabled': enabled === 'on',
-        'antiRaid.action': action || 'ban',
-        'antiRaid.lockdown': lockdown === 'on',
-        'antiRaid.joinThreshold': parseInt(joinThreshold) || 5,
-        'antiRaid.joinInterval': (parseInt(joinInterval) || 5) * 1000,
-        'antiRaid.spamThreshold': parseInt(spamThreshold) || 5,
-        'antiRaid.spamInterval': (parseInt(spamInterval) || 5) * 1000,
-        'antiRaid.mentionThreshold': parseInt(mentionThreshold) || 5,
-        'antiRaid.mentionInterval': (parseInt(mentionInterval) || 5) * 1000,
-        'antiRaid.channelThreshold': parseInt(channelThreshold) || 3,
-        'antiRaid.channelInterval': (parseInt(channelInterval) || 10) * 1000,
-        'antiRaid.newAccountAge': parseInt(newAccountAge) || 7,
-        'antiRaid.logChannel': logChannel || null,
-      },
-      { upsert: true }
-    );
+    db.findOneAndUpdate(guildId, {
+      'antiRaid.enabled':          enabled === 'on',
+      'antiRaid.action':           action || 'ban',
+      'antiRaid.lockdown':         lockdown === 'on',
+      'antiRaid.joinThreshold':    parseInt(joinThreshold)    || 5,
+      'antiRaid.joinInterval':     (parseInt(joinInterval)    || 5)  * 1000,
+      'antiRaid.spamThreshold':    parseInt(spamThreshold)    || 5,
+      'antiRaid.spamInterval':     (parseInt(spamInterval)    || 5)  * 1000,
+      'antiRaid.mentionThreshold': parseInt(mentionThreshold) || 5,
+      'antiRaid.mentionInterval':  (parseInt(mentionInterval) || 5)  * 1000,
+      'antiRaid.channelThreshold': parseInt(channelThreshold) || 3,
+      'antiRaid.channelInterval':  (parseInt(channelInterval) || 10) * 1000,
+      'antiRaid.newAccountAge':    parseInt(newAccountAge)    || 7,
+      'antiRaid.logChannel':       logChannel || null,
+    });
     res.json({ success: true, message: 'Ayarlar kaydedildi!' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -197,7 +176,7 @@ app.post('/api/guild/:guildId/lockdown', isAuth, isGuildAdmin, async (req, res) 
   const client = req.app.get('discordClient');
 
   try {
-    const guildData = await Guild.findOne({ guildId });
+    const guildData = db.findOne(guildId);
     const discordGuild = client?.guilds.cache.get(guildId);
 
     if (discordGuild && guildData) {
@@ -208,7 +187,6 @@ app.post('/api/guild/:guildId/lockdown', isAuth, isGuildAdmin, async (req, res) 
         await antiRaid.disableLockdown(discordGuild, guildData);
       }
     }
-
     res.json({ success: true, lockdown: state });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -221,15 +199,13 @@ app.post('/api/guild/:guildId/lockdown', isAuth, isGuildAdmin, async (req, res) 
 app.get('/api/guild/:guildId/stats', isAuth, isGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
-    const guildData = await Guild.findOne({ guildId });
-    if (!guildData) return res.json({ stats: {}, logs: [] });
+    const guildData = db.findOne(guildId);
 
-    // Son 7 gün için günlük log sayıları
     const now = Date.now();
     const days = [];
     for (let i = 6; i >= 0; i--) {
       const start = now - (i + 1) * 86400000;
-      const end = now - i * 86400000;
+      const end   = now - i       * 86400000;
       const count = guildData.logs.filter(l => {
         const t = new Date(l.timestamp).getTime();
         return t >= start && t < end;
@@ -250,7 +226,7 @@ app.get('/api/guild/:guildId/stats', isAuth, isGuildAdmin, async (req, res) => {
 app.post('/api/guild/:guildId/clear-logs', isAuth, isGuildAdmin, async (req, res) => {
   const { guildId } = req.params;
   try {
-    await Guild.findOneAndUpdate({ guildId }, { $set: { logs: [] } });
+    db.findOneAndUpdate(guildId, { $set: { logs: [] } });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -258,7 +234,7 @@ app.post('/api/guild/:guildId/clear-logs', isAuth, isGuildAdmin, async (req, res
 });
 
 // ─────────────────────────────────────────────
-// SUNUCUYU BAŞLAT
+// BAŞLAT
 // ─────────────────────────────────────────────
 function startDashboard(client, antiRaid) {
   app.set('discordClient', client);
@@ -266,7 +242,7 @@ function startDashboard(client, antiRaid) {
 
   const port = process.env.PORT || config.dashboard.port;
   app.listen(port, '0.0.0.0', () => {
-    console.log(`🌐 Dashboard başlatıldı: http://0.0.0.0:${port}`);
+    console.log(`🌐 Dashboard: http://0.0.0.0:${port}`);
   });
 }
 
