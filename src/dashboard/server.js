@@ -265,8 +265,8 @@ function startDashboard(client, antiRaid) {
   app.set('antiRaid', antiRaid);
 
   const port = process.env.PORT || config.dashboard.port;
-  app.listen(port, () => {
-    console.log(`🌐 Dashboard başlatıldı: http://localhost:${port}`);
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🌐 Dashboard başlatıldı: http://0.0.0.0:${port}`);
   });
 }
 
