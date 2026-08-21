@@ -18,10 +18,15 @@ if (process.env.PATH && !process.env.PATH.includes(ffmpegDir)) {
   process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
 }
 
-// play-dl'i YouTube için hazırla (anonim mod)
-playdl.setToken({
-  useragent: ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'],
-}).catch(() => {});
+// play-dl'i YouTube için hazırla — cookie varsa kullan
+const ytCookie = process.env.YOUTUBE_COOKIE;
+if (ytCookie) {
+  playdl.setToken({
+    youtube: { cookie: ytCookie },
+  }).then(() => console.log('🍪 YouTube cookie yüklendi.')).catch(() => {});
+} else {
+  console.warn('⚠️ YOUTUBE_COOKIE env bulunamadı, anonim modda çalışılıyor.');
+}
 
 // guildId → { connection, player, queue, current, textChannel, loopMode, volume }
 const queues = new Map();
