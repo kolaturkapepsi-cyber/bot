@@ -39,5 +39,15 @@ module.exports = {
     port: 3000,
     secret: process.env.SESSION_SECRET || 'supersecretkey',
     callbackUrl: process.env.CALLBACK_URL || 'https://bot-production-32b4.up.railway.app/auth/callback',
-  }
+  },
+
+  // Müzik Ayarları
+  music: {
+    // Varsayılan ses seviyesi (0-100)
+    defaultVolume: 50,
+    // Kuyruk boşaldığında ses kanalında beklenecek süre (ms) — 0 = anında ayrıl
+    leaveOnEmptyDelay: 5000,
+    // Arama sonuçlarında gösterilecek maksimum sonuç sayısı
+    searchResultLimit: 5,
+  },
 };

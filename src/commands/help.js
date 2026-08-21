@@ -45,6 +45,21 @@ module.exports = {
           value: '`http://localhost:3000` — Web arayüzünden yönet',
           inline: false
         },
+        {
+          name: '🎵 Müzik Komutları',
+          value: [
+            '`!play <şarkı/URL>` — YouTube\'dan şarkı çal (`!p`, `!çal`)',
+            '`!skip` — Sıradaki şarkıya geç (`!s`, `!geç`)',
+            '`!stop` — Müziği durdur ve kuyruğu temizle (`!dc`)',
+            '`!pause` — Şarkıyı duraklat (`!duraklat`)',
+            '`!resume` — Duraklatılmış şarkıyı devam ettir (`!devam`)',
+            '`!queue` — Kuyruk listesini göster (`!q`, `!kuyruk`)',
+            '`!nowplaying` — Şu an çalanı göster (`!np`)',
+            '`!volume <1-100>` — Ses seviyesini ayarla (`!ses`)',
+            '`!loop <none|song|queue>` — Döngü modunu ayarla',
+          ].join('\n'),
+          inline: false
+        },
       )
       .setTimestamp()
       .setFooter({ text: `Prefix: ${config.prefix} • AntiRaid Bot` });

@@ -17,6 +17,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildVoiceStates, // Müzik için gerekli
   ],
   partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
 });
@@ -27,18 +28,21 @@ const commandsPath = path.join(__dirname, 'src', 'commands');
 fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
   const cmd = require(path.join(commandsPath, file));
   client.commands.set(cmd.name, cmd);
-  console.log(`📦 Komut yüklendi: ${cmd.name}`);
+  // Alias varsa onları da kaydet
+  if (cmd.aliases && Array.isArray(cmd.aliases)) {
+    cmd.aliases.forEach(alias => client.commands.set(alias, cmd));
+  }
+  console.log(`📦 Komut yüklendi: ${cmd.name}${cmd.aliases ? ` (aliases: ${cmd.aliases.join(', ')})` : ''}`);
 });
 
-// AntiRaid sistemini başlat
 const antiRaid = new AntiRaid(client);
 
 // Dashboard'u başlat
 const startDashboard = require('./src/dashboard/server');
 
-// ─────────────────────────────────────────────
-// BOT HAZIR
-// ─────────────────────────────────────────────
+
+
+
 client.once('ready', async () => {
   console.log(`\n✅ ${client.user.tag} olarak giriş yapıldı!`);
   console.log(`📡 ${client.guilds.cache.size} sunucuda aktif\n`);
