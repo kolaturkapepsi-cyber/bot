@@ -1,5 +1,5 @@
 const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
+const { YoutubeiExtractor } = require('discord-player-youtubei');
 const ffmpegPath = require('ffmpeg-static');
 const path = require('path');
 
@@ -16,8 +16,8 @@ async function initPlayer(client) {
     skipFFmpeg: false,
   });
 
-  // Tüm varsayılan extractor'ları yükle (YouTube dahil)
-  await _player.extractors.loadMulti(DefaultExtractors);
+  // YoutubeiExtractor: tamamen Node.js tabanlı, Python gerektirmez
+  await _player.extractors.register(YoutubeiExtractor, {});
 
   // ── Eventler ──
   _player.events.on('playerStart', (queue, track) => {
@@ -40,7 +40,6 @@ async function initPlayer(client) {
   });
 
   _player.events.on('audioTrackAdd', (queue, track) => {
-    // İlk şarkı eklendiğinde playerStart zaten tetiklenir
     if (queue.tracks.size > 0) {
       queue.metadata?.channel?.send(
         `✅ **${track.title}** kuyruğa eklendi. (Sıra: #${queue.tracks.size + 1})`
@@ -62,7 +61,7 @@ async function initPlayer(client) {
     queue.metadata?.channel?.send(`❌ Çalma hatası: \`${error.message}\``).catch(() => {});
   });
 
-  console.log('🎵 MusicPlayer (discord-player) hazır.');
+  console.log('🎵 MusicPlayer (discord-player + youtubei) hazır.');
   return _player;
 }
 
