@@ -103,6 +103,29 @@ client.on('messageCreate', async (message) => {
 });
 
 // ─────────────────────────────────────────────
+// BAN KORUMASI — Korunan kullanıcı banlanırsa otomatik unban
+// ─────────────────────────────────────────────
+client.on('guildBanAdd', async (ban) => {
+  const protectedUsers = (process.env.PROTECTED_USERS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!protectedUsers.includes(ban.user.id)) return;
+
+  try {
+    await ban.guild.members.unban(ban.user.id, '🛡️ Koruma aktif — otomatik unban');
+    console.log(`🛡️ Korunan kullanıcı ${ban.user.tag} otomatik unban edildi.`);
+
+    // Log kanalına bildir
+    const guildData = await require('./src/database/models/Guild').findOne({ guildId: ban.guild.id });
+    const logChannelId = guildData?.antiRaid?.logChannel;
+    if (logChannelId) {
+      const logChannel = ban.guild.channels.cache.get(logChannelId);
+      logChannel?.send(`🛡️ **${ban.user.tag}** koruma altında olduğu için ban kaldırıldı.`).catch(() => {});
+    }
+  } catch (err) {
+    console.error('Ban koruması hatası:', err.message);
+  }
+});
+
+// ─────────────────────────────────────────────
 // KANAL OLUŞTURULDU/SİLİNDİ — KANAL SPAM
 // ─────────────────────────────────────────────
 client.on('channelCreate', async (channel) => {

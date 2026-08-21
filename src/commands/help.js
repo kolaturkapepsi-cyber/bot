@@ -21,7 +21,21 @@ module.exports = {
             '`!mute @kullanıcı <süre> [sebep]` — Timeout uygula (`!sustur`)\n↳ Süre: `10s` `5m` `1h` `1d`',
             '`!unmute @kullanıcı` — Timeout\'u kaldır (`!unsustur`)',
           ].join('\n'),
-          inline: false
+          inline: false,
+        },
+        {
+          name: '🔒 Özel Oda Komutları',
+          value: [
+            '`!oda` — Özel ses odası aç (`!oda aç`)',
+            '`!oda kapat` — Odayı sil',
+            '`!oda kilitle` — Odaya girişi engelle',
+            '`!oda kilidaç` — Kilidi kaldır',
+            '`!oda davet @kullanıcı` — Kullanıcıyı davet et',
+            '`!oda at @kullanıcı` — Kullanıcıyı odadan çıkar',
+            '`!oda limit <sayı>` — Kullanıcı limiti ayarla',
+            '`!oda isim <ad>` — Oda adını değiştir',
+          ].join('\n'),
+          inline: false,
         },
         {
           name: '🛡️ AntiRaid Komutları',
@@ -33,50 +47,48 @@ module.exports = {
             '`!antiraid whitelist add/remove @kullanıcı` — Whitelist yönet',
             '`!antiraid logchannel #kanal` — Log kanalı ayarla',
           ].join('\n'),
-          inline: false
+          inline: false,
         },
         {
-          name: '🔒 Lockdown Komutları',
+          name: '🔐 Lockdown Komutları',
           value: [
             '`!lockdown` — Lockdown durumunu göster',
             '`!lockdown on` — Sunucuyu kilitle',
             '`!lockdown off` — Kilidi kaldır',
           ].join('\n'),
-          inline: false
+          inline: false,
         },
         {
           name: '📋 Log Komutları',
-          value: [
-            '`!logs [sayı]` — Son logları görüntüle (max 25)',
-          ].join('\n'),
-          inline: false
+          value: ['`!logs [sayı]` — Son logları görüntüle (max 25)'].join('\n'),
+          inline: false,
         },
         {
           name: '🌐 Dashboard',
-          value: '`http://localhost:3000` — Web arayüzünden yönet',
-          inline: false
+          value: '`https://bot-production-32b4.up.railway.app` — Web arayüzünden yönet',
+          inline: false,
         },
         {
           name: '🎵 Müzik Komutları',
           value: [
-            '`!join` — Ses kanalına bağlan (`!gel`, `!bağlan`)',
-            '`!left` — Ses kanalından ayrıl (`!leave`, `!ayrıl`, `!çık`)',
-            '`!play <şarkı/URL>` — YouTube\'dan şarkı çal (`!p`, `!çal`)',
-            '`!skip` — Sıradaki şarkıya geç (`!s`, `!geç`)',
-            '`!stop` — Müziği durdur ve kuyruğu temizle (`!dc`)',
-            '`!pause` — Şarkıyı duraklat (`!duraklat`)',
-            '`!resume` — Duraklatılmış şarkıyı devam ettir (`!devam`)',
-            '`!queue` — Kuyruk listesini göster (`!q`, `!kuyruk`)',
+            '`!join` — Ses kanalına bağlan (`!gel`)',
+            '`!left` — Ses kanalından ayrıl (`!leave`)',
+            '`!play <şarkı/URL>` — Şarkı çal (`!p`, `!çal`)',
+            '`!skip` — Sonraki şarkıya geç (`!s`)',
+            '`!stop` — Müziği durdur (`!dc`)',
+            '`!pause` — Duraklat',
+            '`!resume` — Devam ettir',
+            '`!queue` — Kuyruğu göster (`!q`)',
             '`!nowplaying` — Şu an çalanı göster (`!np`)',
-            '`!volume <1-100>` — Ses seviyesini ayarla (`!ses`)',
-            '`!loop <none|song|queue>` — Döngü modunu ayarla',
+            '`!volume <1-100>` — Ses seviyesi',
+            '`!loop <none|song|queue>` — Döngü modu',
           ].join('\n'),
-          inline: false
+          inline: false,
         },
       )
       .setTimestamp()
       .setFooter({ text: `Prefix: ${config.prefix} • AntiRaid Bot` });
 
     message.reply({ embeds: [embed] });
-  }
+  },
 };

@@ -1,6 +1,8 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const config = require('../../config');
 
+const PROTECTED_USERS = (process.env.PROTECTED_USERS || '').split(',').map(s => s.trim()).filter(Boolean);
+
 module.exports = {
   name: 'kick',
   aliases: ['at'],
@@ -19,6 +21,11 @@ module.exports = {
     if (!target) return message.reply('❌ Kullanım: `!kick @kullanıcı [sebep]`');
 
     if (target.id === message.author.id) return message.reply('❌ Kendini atamazsın.');
+
+    if (PROTECTED_USERS.includes(target.id)) {
+      return message.reply('🛡️ Bu kullanıcı koruma altında, atılamaz.');
+    }
+
     if (!target.kickable) return message.reply('❌ Bu kullanıcıyı atamam. Rolü benden yüksek olabilir.');
 
     const reason = args.slice(1).join(' ') || 'Sebep belirtilmedi';

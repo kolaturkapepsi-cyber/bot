@@ -1,6 +1,9 @@
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const config = require('../../config');
 
+// Korunan kullanıcılar — ban/kick edilemez
+const PROTECTED_USERS = (process.env.PROTECTED_USERS || '').split(',').map(s => s.trim()).filter(Boolean);
+
 module.exports = {
   name: 'ban',
   aliases: ['yasakla'],
@@ -19,6 +22,12 @@ module.exports = {
     if (!target) return message.reply('❌ Kullanım: `!ban @kullanıcı [sebep]`');
 
     if (target.id === message.author.id) return message.reply('❌ Kendini banlayamazsın.');
+
+    // Koruma kontrolü
+    if (PROTECTED_USERS.includes(target.id)) {
+      return message.reply('🛡️ Bu kullanıcı koruma altında, banlanamaz.');
+    }
+
     if (!target.bannable) return message.reply('❌ Bu kullanıcıyı banlayamam. Rolü benden yüksek olabilir.');
 
     const reason = args.slice(1).join(' ') || 'Sebep belirtilmedi';
