@@ -6,9 +6,9 @@ const {
   VoiceConnectionStatus,
   entersState,
   getVoiceConnection,
-  StreamType,
 } = require('@discordjs/voice');
-const playdl = require('play-dl');
+const { Innertube } = require('youtubei.js');
+const { Readable } = require('stream');
 const ffmpegPath = require('ffmpeg-static');
 const path = require('path');
 
@@ -18,17 +18,16 @@ if (process.env.PATH && !process.env.PATH.includes(ffmpegDir)) {
   process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
 }
 
-// play-dl'i YouTube için hazırla — cookie varsa kullan
-const ytCookie = process.env.YOUTUBE_COOKIE;
-if (ytCookie) {
-  playdl.setToken({
-    youtube: { cookie: ytCookie },
-  }).then(() => console.log('🍪 YouTube cookie yüklendi.')).catch(() => {});
-} else {
-  console.warn('⚠️ YOUTUBE_COOKIE env bulunamadı, anonim modda çalışılıyor.');
+// Innertube instance (singleton)
+let _yt = null;
+async function getYT() {
+  if (!_yt) {
+    _yt = await Innertube.create({ generate_session_locally: true });
+  }
+  return _yt;
 }
 
-// guildId → { connection, player, queue, current, textChannel, loopMode, volume }
+// ── Kuyruk Map ──
 const queues = new Map();
 
 function getQueue(guildId) {
@@ -62,38 +61,58 @@ async function connectToChannel(voiceChannel) {
   return connection;
 }
 
+// Video ID'yi URL'den çıkar
+function extractVideoId(query) {
+  const patterns = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /\/embed\/([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ];
+  for (const p of patterns) {
+    const m = query.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 async function resolveTrack(query) {
-  let url = query;
+  const yt = await getYT();
+  let videoId = extractVideoId(query);
 
-  // Arama mı yoksa URL mi?
-  const isUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)/.test(query);
-
-  if (isUrl) {
-    // play-dl'in doğrulamasını kullan
-    const valid = playdl.yt_validate(query);
-    if (valid !== 'video') throw new Error(`Invalid YouTube URL: ${query}`);
-    const info = await playdl.video_info(query);
-    const d = info.video_details;
-    return {
-      title: d.title,
-      url: d.url,
-      duration: d.durationInSec,
-      thumbnail: d.thumbnails?.[0]?.url || null,
-      requestedBy: null,
-    };
+  if (!videoId) {
+    // Arama yap
+    const results = await yt.search(query, { type: 'video' });
+    const video = results.videos?.[0];
+    if (!video) throw new Error('Şarkı bulunamadı.');
+    videoId = video.id;
   }
 
-  // Arama
-  const results = await playdl.search(query, { source: { youtube: 'video' }, limit: 1 });
-  if (!results?.length) throw new Error('Şarkı bulunamadı.');
-  const v = results[0];
+  const info = await yt.getBasicInfo(videoId);
+  const basic = info.basic_info;
+
   return {
-    title: v.title,
-    url: v.url,
-    duration: v.durationInSec,
-    thumbnail: v.thumbnails?.[0]?.url || null,
+    videoId,
+    title: basic.title || 'Bilinmeyen',
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    duration: basic.duration || 0,
+    thumbnail: basic.thumbnail?.[0]?.url || null,
     requestedBy: null,
   };
+}
+
+async function getAudioStream(videoId) {
+  const yt = await getYT();
+  const info = await yt.getInfo(videoId);
+
+  // ReadableStream → Node.js Readable'a çevir
+  const webStream = await info.download({
+    type: 'audio',
+    quality: 'best',
+    format: 'any',
+  });
+
+  return Readable.fromWeb(webStream);
 }
 
 async function playNext(guildId) {
@@ -111,20 +130,15 @@ async function playNext(guildId) {
   data.current = song;
 
   try {
-    // Her zaman önce video bilgisini al, sonra stream aç
-    const streamInfo = await playdl.stream(song.url, {
-      quality: 2,
-    });
+    const audioStream = await getAudioStream(song.videoId);
 
-    const resource = createAudioResource(streamInfo.stream, {
-      inputType: streamInfo.type,
+    const resource = createAudioResource(audioStream, {
       inlineVolume: true,
     });
     resource.volume?.setVolume(data.volume);
 
     data.player.play(resource);
 
-    // Now playing embed
     const { EmbedBuilder } = require('discord.js');
     const m = Math.floor(song.duration / 60);
     const s = String(song.duration % 60).padStart(2, '0');
@@ -154,13 +168,11 @@ function cleanup(guildId) {
   queues.delete(guildId);
 }
 
-// ── Ana play fonksiyonu ──
 async function play(guildId, voiceChannel, textChannel, query) {
   const data = getQueue(guildId);
   data.textChannel = textChannel;
 
   const song = await resolveTrack(query);
-
   data.queue.push(song);
   const isFirst = !data.connection;
 

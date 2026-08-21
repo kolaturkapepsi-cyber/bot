@@ -24,7 +24,8 @@
     "passport": "^0.6.0",
     "passport-discord": "^0.1.4",
     "play-dl": "^1.9.7",
-    "sodium-native": "^5.1.0"
+    "sodium-native": "^5.1.0",
+    "youtubei.js": "^18.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
