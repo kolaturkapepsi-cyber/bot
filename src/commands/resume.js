@@ -1,18 +1,13 @@
-const { useQueue } = require('discord-player');
-
+const music = require('../music/MusicPlayer');
 module.exports = {
-  name: 'resume',
-  aliases: ['devam', 'r'],
-  description: 'Duraklatılmış şarkıyı devam ettirir.',
-  usage: '!resume',
-
+  name: 'resume', aliases: ['devam', 'r'],
+  description: 'Duraklatılan şarkıyı devam ettirir.', usage: '!resume',
   async execute(message) {
-    const queue = useQueue(message.guild.id);
-    if (!queue) return message.reply('❌ Şu an çalan bir şarkı yok.');
-    if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
-    if (!queue.node.isPaused()) return message.reply('❌ Şarkı zaten çalıyor.');
-
-    queue.node.resume();
-    message.reply('▶️ Şarkı devam ediyor.');
+    const data = music.getQueue(message.guild.id);
+    if (!data?.current) return message.reply('❌ Şu an çalan bir şarkı yok.');
+    if (!message.member?.voice?.channel) return message.reply('❌ Ses kanalında olman gerekiyor!');
+    music.resume(message.guild.id)
+      ? message.reply('▶️ Devam ediyor.')
+      : message.reply('❌ Zaten çalıyor.');
   },
 };

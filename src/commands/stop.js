@@ -1,17 +1,12 @@
-const { useQueue } = require('discord-player');
-
+const music = require('../music/MusicPlayer');
 module.exports = {
-  name: 'stop',
-  aliases: ['dc'],
-  description: 'Müziği durdurur, kuyruğu temizler ve ses kanalından ayrılır.',
-  usage: '!stop',
-
+  name: 'stop', aliases: ['dc'],
+  description: 'Müziği durdurur ve kuyruğu temizler.', usage: '!stop',
   async execute(message) {
-    const queue = useQueue(message.guild.id);
-    if (!queue) return message.reply('❌ Şu an çalan bir şarkı yok.');
-    if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
-
-    queue.delete();
+    const data = music.getQueue(message.guild.id);
+    if (!data) return message.reply('❌ Şu an çalan bir şarkı yok.');
+    if (!message.member?.voice?.channel) return message.reply('❌ Ses kanalında olman gerekiyor!');
+    music.stop(message.guild.id);
     message.reply('⏹️ Müzik durduruldu ve kuyruk temizlendi.');
   },
 };

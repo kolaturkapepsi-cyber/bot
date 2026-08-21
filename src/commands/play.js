@@ -1,48 +1,37 @@
-const { useMainPlayer } = require('discord-player');
+const music = require('../music/MusicPlayer');
 
 module.exports = {
   name: 'play',
   aliases: ['p', 'çal'],
-  description: 'YouTube\'dan şarkı çalar. URL veya arama terimi kullanabilirsiniz.',
-  usage: '!play <şarkı adı veya YouTube URL>',
+  description: 'YouTube\'dan şarkı çalar.',
+  usage: '!play <şarkı adı veya URL>',
 
   async execute(message, args) {
-    if (!args.length) {
-      return message.reply('❌ Kullanım: `!play <şarkı adı veya URL>`');
-    }
+    if (!args.length) return message.reply('❌ Kullanım: `!play <şarkı adı veya URL>`');
 
     const voiceChannel = message.member?.voice?.channel;
     if (!voiceChannel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
 
-    const permissions = voiceChannel.permissionsFor(message.client.user);
-    if (!permissions.has('Connect') || !permissions.has('Speak')) {
+    const perms = voiceChannel.permissionsFor(message.client.user);
+    if (!perms.has('Connect') || !perms.has('Speak'))
       return message.reply('❌ Bu ses kanalına bağlanmak için iznim yok!');
-    }
 
-    const query = args.join(' ');
-    const player = useMainPlayer();
-
+    const loading = await message.reply('🔎 Aranıyor...');
     try {
-      const { track } = await player.play(voiceChannel, query, {
-        nodeOptions: {
-          metadata: { channel: message.channel },
-          selfDeaf: true,
-          volume: 50,
-          leaveOnEmpty: true,
-          leaveOnEmptyCooldown: 5000,
-          leaveOnEnd: true,
-          leaveOnEndCooldown: 5000,
-        },
-        requestedBy: message.author,
-      });
+      const { song, isFirst } = await music.play(
+        message.guild.id, voiceChannel, message.channel, args.join(' ')
+      );
+      song.requestedBy = message.author.username;
 
-      // playerStart eventi embed'i gönderiyor, sadece ilk şarkıda ek mesaj yok
-      if (player.nodes.get(message.guild)?.tracks?.size > 0) {
-        message.react('✅').catch(() => {});
+      if (!isFirst) {
+        const data = music.getQueue(message.guild.id);
+        await loading.edit(`✅ **${song.title}** kuyruğa eklendi. (Sıra: #${data.queue.length})`);
+      } else {
+        await loading.delete().catch(() => {});
       }
     } catch (err) {
-      console.error('[play komutu]', err.message);
-      message.reply(`❌ Hata: \`${err.message}\``);
+      console.error('[play]', err.message);
+      await loading.edit(`❌ Hata: \`${err.message}\``);
     }
   },
 };

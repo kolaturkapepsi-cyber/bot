@@ -1,30 +1,14 @@
-const { useQueue } = require('discord-player');
-const { QueueRepeatMode } = require('discord-player');
-
+const music = require('../music/MusicPlayer');
 module.exports = {
-  name: 'loop',
-  aliases: ['döngü', 'tekrar'],
-  description: 'Döngü modunu ayarlar: none, song, queue.',
-  usage: '!loop <none|song|queue>',
-
+  name: 'loop', aliases: ['döngü'],
+  description: 'Döngü modunu ayarlar.', usage: '!loop <none|song|queue>',
   async execute(message, args) {
-    const queue = useQueue(message.guild.id);
-    if (!queue) return message.reply('❌ Şu an çalan bir şarkı yok.');
-    if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
-
-    const modeMap = {
-      none: QueueRepeatMode.OFF,
-      song: QueueRepeatMode.TRACK,
-      queue: QueueRepeatMode.QUEUE,
-    };
-
+    const data = music.getQueue(message.guild.id);
+    if (!data) return message.reply('❌ Şu an çalan bir şarkı yok.');
     const mode = args[0]?.toLowerCase();
-    if (!mode || !(mode in modeMap)) {
-      return message.reply('❌ Geçerli mod: `none`, `song`, `queue`');
-    }
-
-    queue.setRepeatMode(modeMap[mode]);
-    const labels = { none: '➡️ Döngü kapatıldı', song: '🔂 Şarkı döngüsü', queue: '🔁 Kuyruk döngüsü' };
+    if (!['none','song','queue'].includes(mode)) return message.reply('❌ Geçerli: `none`, `song`, `queue`');
+    music.setLoop(message.guild.id, mode);
+    const labels = { none:'➡️ Döngü kapalı', song:'🔂 Şarkı döngüsü', queue:'🔁 Kuyruk döngüsü' };
     message.reply(labels[mode]);
   },
 };

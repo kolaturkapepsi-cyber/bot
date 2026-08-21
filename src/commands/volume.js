@@ -1,22 +1,14 @@
-const { useQueue } = require('discord-player');
-
+const music = require('../music/MusicPlayer');
 module.exports = {
-  name: 'volume',
-  aliases: ['vol', 'ses'],
-  description: 'Ses seviyesini ayarlar (1-100).',
-  usage: '!volume <1-100>',
-
+  name: 'volume', aliases: ['vol', 'ses'],
+  description: 'Ses seviyesini ayarlar (1-100).', usage: '!volume <1-100>',
   async execute(message, args) {
-    const queue = useQueue(message.guild.id);
-    if (!queue?.isPlaying()) return message.reply('❌ Şu an çalan bir şarkı yok.');
-    if (!message.member?.voice?.channel) return message.reply('❌ Bir ses kanalında olman gerekiyor!');
-
-    if (!args[0]) return message.reply(`🔊 Mevcut ses: **%${queue.node.volume}**`);
-
+    const data = music.getQueue(message.guild.id);
+    if (!data?.current) return message.reply('❌ Şu an çalan bir şarkı yok.');
+    if (!args[0]) return message.reply(`🔊 Mevcut ses: **%${Math.round(data.volume*100)}**`);
     const vol = parseInt(args[0]);
-    if (isNaN(vol) || vol < 1 || vol > 100) return message.reply('❌ Ses seviyesi 1-100 arasında olmalı.');
-
-    queue.node.setVolume(vol);
-    message.reply(`🔊 Ses seviyesi **%${vol}** olarak ayarlandı.`);
+    if (isNaN(vol) || vol < 1 || vol > 100) return message.reply('❌ 1-100 arasında bir değer gir.');
+    music.setVolume(message.guild.id, vol);
+    message.reply(`🔊 Ses **%${vol}** olarak ayarlandı.`);
   },
 };

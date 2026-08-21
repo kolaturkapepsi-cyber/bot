@@ -1,31 +1,23 @@
 const { EmbedBuilder } = require('discord.js');
-const { useQueue } = require('discord-player');
-
+const music = require('../music/MusicPlayer');
 module.exports = {
-  name: 'nowplaying',
-  aliases: ['np', 'şuançalıyor'],
-  description: 'Şu an çalan şarkıyı gösterir.',
-  usage: '!nowplaying',
-
+  name: 'nowplaying', aliases: ['np'],
+  description: 'Şu an çalan şarkıyı gösterir.', usage: '!np',
   async execute(message) {
-    const queue = useQueue(message.guild.id);
-    if (!queue?.currentTrack) return message.reply('❌ Şu an çalan bir şarkı yok.');
-
-    const track = queue.currentTrack;
-    const repeatLabels = { 0: '➡️ Kapalı', 1: '🔂 Şarkı', 2: '🔁 Kuyruk' };
-
+    const data = music.getQueue(message.guild.id);
+    if (!data?.current) return message.reply('❌ Şu an çalan bir şarkı yok.');
+    const s = data.current;
+    const m = Math.floor(s.duration/60), sec = String(s.duration%60).padStart(2,'0');
+    const loopLabel = { none:'➡️ Kapalı', song:'🔂 Şarkı', queue:'🔁 Kuyruk' };
     const embed = new EmbedBuilder()
-      .setColor('#1DB954')
-      .setTitle('🎵 Şu An Çalıyor')
-      .setDescription(`**[${track.title}](${track.url})**`)
+      .setColor('#1DB954').setTitle('🎵 Şu An Çalıyor')
+      .setDescription(`**[${s.title}](${s.url})**`)
       .addFields(
-        { name: '⏱️ Süre', value: track.duration, inline: true },
-        { name: '🙋 İsteyen', value: track.requestedBy?.username || 'Bilinmiyor', inline: true },
-        { name: '🔁 Loop', value: repeatLabels[queue.repeatMode] || '➡️ Kapalı', inline: true },
-        { name: '📋 Kuyrukta', value: `${queue.tracks.size} şarkı`, inline: true },
-      )
-      .setThumbnail(track.thumbnail || null);
-
-    message.reply({ embeds: [embed] });
+        { name:'⏱️ Süre', value:`${m}:${sec}`, inline:true },
+        { name:'🙋 İsteyen', value:s.requestedBy||'Bilinmiyor', inline:true },
+        { name:'🔁 Loop', value:loopLabel[data.loopMode], inline:true },
+        { name:'📋 Kuyruk', value:`${data.queue.length} şarkı`, inline:true },
+      ).setThumbnail(s.thumbnail);
+    message.reply({ embeds:[embed] });
   },
 };
