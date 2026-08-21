@@ -1,4 +1,4 @@
-const { joinVoiceChannel, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
+const { getDistube } = require('../music/MusicPlayer');
 
 module.exports = {
   name: 'join',
@@ -18,14 +18,9 @@ module.exports = {
     }
 
     try {
-      const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
-        selfDeaf: true,
-      });
-
-      await entersState(connection, VoiceConnectionStatus.Ready, 10_000);
+      const distube = getDistube();
+      // DisTube üzerinden bağlan — çakışma olmaz
+      await distube.voices.join(voiceChannel);
       message.reply(`✅ **${voiceChannel.name}** kanalına bağlandım!`);
     } catch (err) {
       console.error('[join komutu]', err.message);

@@ -2,7 +2,7 @@ const { getDistube } = require('../music/MusicPlayer');
 
 module.exports = {
   name: 'stop',
-  aliases: ['dc', 'leave', 'ayrıl'],
+  aliases: ['dc'],
   description: 'Müziği durdurur, kuyruğu temizler ve ses kanalından ayrılır.',
   usage: '!stop',
 
