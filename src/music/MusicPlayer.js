@@ -1,8 +1,14 @@
 const { DisTube } = require('distube');
-const { YtDlpPlugin } = (() => {
-  try { return require('@distube/yt-dlp'); } catch { return { YtDlpPlugin: null }; }
-})();
 const { YouTubePlugin } = require('@distube/youtube');
+const ffmpegPath = require('ffmpeg-static');
+const path = require('path');
+
+// ffmpeg-static binary'sini sistem PATH'ine ekle
+// DisTube ffmpeg'i PATH üzerinden bulur
+const ffmpegDir = path.dirname(ffmpegPath);
+if (!process.env.PATH.includes(ffmpegDir)) {
+  process.env.PATH = ffmpegDir + path.delimiter + process.env.PATH;
+}
 
 let _distube = null;
 
