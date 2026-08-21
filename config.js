@@ -38,6 +38,6 @@ module.exports = {
   dashboard: {
     port: 3000,
     secret: process.env.SESSION_SECRET || 'supersecretkey',
-    callbackUrl: process.env.CALLBACK_URL || 'http://localhost:3000/auth/callback',
+    callbackUrl: process.env.CALLBACK_URL || 'https://bot-production-32b4.up.railway.app/auth/callback',
   }
 };
