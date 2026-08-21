@@ -6,6 +6,7 @@ const connectDB = require('./src/database/connect');
 const AntiRaid = require('./src/antiraid/AntiRaid');
 const Guild = require('./src/database/models/Guild');
 const config = require('./config');
+const { initDistube } = require('./src/music/MusicPlayer');
 
 // ─────────────────────────────────────────────
 // CLIENT KURULUMU
@@ -36,6 +37,9 @@ fs.readdirSync(commandsPath).filter(f => f.endsWith('.js')).forEach(file => {
 });
 
 const antiRaid = new AntiRaid(client);
+
+// DisTube müzik sistemini başlat
+initDistube(client);
 
 // Dashboard'u başlat
 const startDashboard = require('./src/dashboard/server');

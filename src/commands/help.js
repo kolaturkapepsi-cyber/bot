@@ -48,6 +48,7 @@ module.exports = {
         {
           name: '🎵 Müzik Komutları',
           value: [
+            '`!join` — Ses kanalına bağlan (`!gel`, `!bağlan`)',
             '`!play <şarkı/URL>` — YouTube\'dan şarkı çal (`!p`, `!çal`)',
             '`!skip` — Sıradaki şarkıya geç (`!s`, `!geç`)',
             '`!stop` — Müziği durdur ve kuyruğu temizle (`!dc`)',

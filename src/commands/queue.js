@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const musicPlayer = require('../music/MusicPlayer');
+const { getDistube } = require('../music/MusicPlayer');
 
 module.exports = {
   name: 'queue',
@@ -8,9 +8,10 @@ module.exports = {
   usage: '!queue',
 
   async execute(message) {
-    const data = musicPlayer.getQueueList(message.guild.id);
+    const distube = getDistube();
+    const queue = distube.getQueue(message.guild.id);
 
-    if (!data || (!data.current && data.queue.length === 0)) {
+    if (!queue || queue.songs.length === 0) {
       return message.reply('❌ Kuyruk boş. Şarkı eklemek için `!play <şarkı>` kullan.');
     }
 
@@ -20,40 +21,36 @@ module.exports = {
       return `${m}:${s}`;
     };
 
-    const loopEmoji = { none: '➡️ Kapalı', song: '🔂 Şarkı', queue: '🔁 Kuyruk' };
+    const loopLabels = { 0: '➡️ Kapalı', 1: '🔂 Şarkı', 2: '🔁 Kuyruk' };
 
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle(`🎵 ${message.guild.name} — Müzik Kuyruğu`)
       .setFooter({
-        text: `Toplam ${data.queue.length + (data.current ? 1 : 0)} şarkı • Loop: ${loopEmoji[data.loopMode] || '➡️ Kapalı'}`,
+        text: `Toplam ${queue.songs.length} şarkı • Loop: ${loopLabels[queue.repeatMode] || '➡️ Kapalı'}`,
       });
 
     // Şu an çalıyor
-    if (data.current) {
-      embed.addFields({
-        name: '▶️ Şu An Çalıyor',
-        value: `**[${data.current.title}](${data.current.url})** \`${formatDuration(data.current.duration)}\``,
-      });
-    }
+    const current = queue.songs[0];
+    embed.addFields({
+      name: '▶️ Şu An Çalıyor',
+      value: `**[${current.name}](${current.url})** \`${formatDuration(current.duration)}\``,
+    });
 
-    // Kuyruk listesi (max 10 şarkı göster)
-    if (data.queue.length > 0) {
-      const list = data.queue
-        .slice(0, 10)
-        .map((song, i) => `\`${i + 1}.\` [${song.title}](${song.url}) \`${formatDuration(song.duration)}\``)
+    // Sıradakiler
+    if (queue.songs.length > 1) {
+      const list = queue.songs
+        .slice(1, 11)
+        .map((song, i) => `\`${i + 1}.\` [${song.name}](${song.url}) \`${formatDuration(song.duration)}\``)
         .join('\n');
 
       embed.addFields({
-        name: `📋 Sıradakiler (${data.queue.length} şarkı)`,
+        name: `📋 Sıradakiler (${queue.songs.length - 1} şarkı)`,
         value: list,
       });
 
-      if (data.queue.length > 10) {
-        embed.addFields({
-          name: '\u200b',
-          value: `... ve **${data.queue.length - 10}** şarkı daha.`,
-        });
+      if (queue.songs.length > 11) {
+        embed.addFields({ name: '\u200b', value: `... ve **${queue.songs.length - 11}** şarkı daha.` });
       }
     }
 
